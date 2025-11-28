@@ -174,7 +174,7 @@ class PaymentGatewayControllerTest {
     @DisplayName("should fail when CVV is <3 characters")
     void shouldFailWhenCVVIsShort() throws Exception {
       PostPaymentRequest req = validPayment();
-      req.setCvv(1);
+      req.setCvv("1");
       assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
     }
 
@@ -182,13 +182,41 @@ class PaymentGatewayControllerTest {
     @DisplayName("should fail when CVV is >4 characters")
     void shouldFailWhenCVVIsLong() throws Exception {
       PostPaymentRequest req = validPayment();
-      req.setCvv(11111);
+      req.setCvv("11111");
       assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
     }
   }
 
+  @Nested
+  @DisplayName("Bank Responses")
+  class BankResponses {
+    @Test
+    @DisplayName("should return Declined if card number ends in even")
+    void shouldFailWhenPaymentWithEvenCardNumber() throws Exception {
+      PostPaymentRequest req = validPayment();
+      req.setCardNumber("4111111111111118");
+      assertPaymentResponseStatus(req, PaymentStatus.DECLINED);
+    }
+
+    @Test
+    @DisplayName("should return Authorized if card number ends in odd")
+    void shouldFailWhenPaymentWithOddCardNumber() throws Exception {
+      PostPaymentRequest req = validPayment();
+      req.setCardNumber("4111111111111111");
+      assertPaymentResponseStatus(req, PaymentStatus.AUTHORIZED);
+    }
+
+    @Test
+    @DisplayName("should return Declined if card number ends in 0")
+    void shouldFailWhenPaymentWithZeroCardNumber() throws Exception {
+      PostPaymentRequest req = validPayment();
+      req.setCardNumber("4111111111111110");
+      assertPaymentResponseStatus(req, PaymentStatus.DECLINED);
+    }
+  }
+
   private void assertPaymentResponseStatus(PostPaymentRequest req, PaymentStatus status) throws Exception {
-    mvc.perform(MockMvcRequestBuilders.post("/payments")
+    mvc.perform(MockMvcRequestBuilders.post("/payment")
             .contentType(MediaType.APPLICATION_JSON)
             .content(paymentJson(req)))
         .andExpect(status().isOk())
@@ -206,7 +234,7 @@ class PaymentGatewayControllerTest {
         2030,
         "USD",
         100,
-        123
+        "123"
     );
   }
 }

@@ -62,7 +62,7 @@ public class PaymentGatewayService {
 
     PostPaymentResponse paymentResponse = new PostPaymentResponse(
         deduplicationId,
-        bankResponse.isAuthorized() ? PaymentStatus.AUTHORIZED : PaymentStatus.DECLINED,
+        toPaymentStatus(bankResponse),
         lastFourDigits(paymentRequest.getCardNumber()),
         paymentRequest.getExpiryMonth(),
         paymentRequest.getExpiryYear(),
@@ -87,6 +87,21 @@ public class PaymentGatewayService {
         request.getCurrency(),
         request.getAmount()
     );
+  }
+
+  private PaymentStatus toPaymentStatus(GetAcquiringBankResponse bankResponse) {
+    // technical failure
+    if (bankResponse == null) {
+      return PaymentStatus.REJECTED;
+    }
+
+    // odd ending
+    if (bankResponse.isAuthorized()) {
+      return PaymentStatus.AUTHORIZED;
+    }
+
+    // even ending
+    return PaymentStatus.DECLINED;
   }
 
   private int lastFourDigits(String cardNumber) {

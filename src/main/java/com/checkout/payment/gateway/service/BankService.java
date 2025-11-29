@@ -18,7 +18,6 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class BankService {
 
-  // TODO make this configurable
   private static final String ACQUIRING_BANK_URL = "http://localhost:8080/payments";
   private static final Logger LOG = LoggerFactory.getLogger(BankService.class);
 
@@ -48,17 +47,17 @@ public class BankService {
     } catch (HttpClientErrorException.BadRequest ex) {
       // 400 -> missing required fields
       LOG.warn("Bad request from bank: {}", ex.getResponseBodyAsString());
+      return null;
 
     } catch (HttpServerErrorException.ServiceUnavailable ex) {
       // 503 -> card ends with 0
       LOG.warn("Bank unavailable: {}", ex.getResponseBodyAsString());
+      return null;
 
     } catch (RestClientException ex) {
       // Any other unexpected errors
       LOG.warn("Unexpected error calling bank: {}", ex.getMessage());
+      return null;
     }
-
-    // If we encountered any error responses, we just return authorized: false
-    return new GetAcquiringBankResponse(false, null);
   }
 }

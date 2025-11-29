@@ -63,8 +63,8 @@ class PaymentGatewayControllerTest {
         .andExpect(jsonPath("$.message").value("Page not found"));
   }
   @Nested
-  @DisplayName("Verifications")
-  class Verification {
+  @DisplayName("Rejection")
+  class Rejection {
 
     @Test
     @DisplayName("should fail when card number is too short (<14 chars)")

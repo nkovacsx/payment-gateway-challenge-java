@@ -3,6 +3,9 @@ package com.checkout.payment.gateway.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 
+/**
+ * Request model for payment processing containing card and payment details.
+ */
 public class PostPaymentRequest implements Serializable {
 
   @JsonProperty("card_number")
@@ -75,6 +78,9 @@ public class PostPaymentRequest implements Serializable {
     this.cvv = cvv;
   }
 
+  /**
+   * Returns formatted expiry date as MM/YYYY.
+   */
   @JsonProperty("expiry_date")
   public String getExpiryDate() {
     return String.format("%d/%d", expiryMonth, expiryYear);

@@ -207,11 +207,11 @@ class PaymentGatewayControllerTest {
     }
 
     @Test
-    @DisplayName("should return Declined if card number ends in 0")
+    @DisplayName("should return Rejected (503) if card number ends in 0")
     void shouldFailWhenPaymentWithZeroCardNumber() throws Exception {
       PostPaymentRequest req = validPayment();
       req.setCardNumber("4111111111111110");
-      assertPaymentResponseStatus(req, PaymentStatus.DECLINED);
+      assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
     }
   }
 

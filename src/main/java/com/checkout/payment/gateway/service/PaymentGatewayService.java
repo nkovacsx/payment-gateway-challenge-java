@@ -13,10 +13,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service for processing payment transactions through the gateway.
+ * Validates requests, communicates with acquiring banks, and persists payment records.
+ */
 @Service
 public class PaymentGatewayService {
 
   private static final Logger LOG = LoggerFactory.getLogger(PaymentGatewayService.class);
+  private static final int LAST_FOUR_DIGITS_LENGTH = 4;
 
   private final PaymentsRepository paymentsRepository;
   private final PaymentValidator paymentValidator;
@@ -32,56 +37,88 @@ public class PaymentGatewayService {
     this.bankService = bankService;
   }
 
+  /**
+   * Retrieves a payment by its unique identifier.
+   *
+   * @param id the payment UUID
+   * @return the payment response
+   * @throws EventProcessingException if payment not found
+   */
   public PostPaymentResponse getPaymentById(UUID id) {
     LOG.debug("Requesting access to to payment with ID {}", id);
     return paymentsRepository.get(id).orElseThrow(() -> new EventProcessingException("Invalid ID"));
   }
 
+  /**
+   * Processes a payment request through validation and bank authorization.
+   *
+   * @param paymentRequest the payment details
+   * @return the payment response with status
+   */
   public PostPaymentResponse processPayment(PostPaymentRequest paymentRequest) {
-    UUID deduplicationId = UUID.randomUUID();
+    UUID paymentId = UUID.randomUUID();
 
-    // Perform the initial validations and return REJECTED if anything fails
-    try {
-      paymentValidator.validate(paymentRequest);
-    } catch (ValidationException e) {
-      PostPaymentResponse rejectedResponse = toPaymentResponse(deduplicationId, PaymentStatus.REJECTED, paymentRequest);
-      paymentsRepository.add(rejectedResponse);
-      return rejectedResponse;
+    if (!isValidPayment(paymentRequest)) {
+      return createAndStoreRejectedPayment(paymentId, paymentRequest);
     }
 
-    // Go to the acquirer bank and get a response
-    GetAcquiringBankResponse bankResponse = bankService.submitBankRequest(
-        new GetAcquiringBankRequest(
-            paymentRequest.getCardNumber(),
-            paymentRequest.getExpiryDate(),
-            paymentRequest.getCurrency(),
-            paymentRequest.getAmount(),
-            paymentRequest.getCvv()
-        )
-    );
+    GetAcquiringBankResponse bankResponse = submitToBankingService(paymentRequest);
+    PostPaymentResponse paymentResponse = createPaymentResponse(paymentId, paymentRequest, bankResponse);
 
-    PostPaymentResponse paymentResponse = new PostPaymentResponse(
-        deduplicationId,
-        toPaymentStatus(bankResponse),
-        lastFourDigits(paymentRequest.getCardNumber()),
-        paymentRequest.getExpiryMonth(),
-        paymentRequest.getExpiryYear(),
-        paymentRequest.getCurrency(),
-        paymentRequest.getAmount()
-    );
     paymentsRepository.add(paymentResponse);
     return paymentResponse;
   }
 
-  private PostPaymentResponse toPaymentResponse(
-      UUID deduplicationId,
+  private boolean isValidPayment(PostPaymentRequest request) {
+    try {
+      paymentValidator.validate(request);
+      return true;
+    } catch (ValidationException e) {
+      LOG.warn("Payment validation failed: {}", e.getMessage());
+      return false;
+    }
+  }
+
+  private PostPaymentResponse createAndStoreRejectedPayment(UUID paymentId, PostPaymentRequest request) {
+    PostPaymentResponse rejectedResponse = buildPaymentResponse(
+        paymentId,
+        PaymentStatus.REJECTED,
+        request
+    );
+    paymentsRepository.add(rejectedResponse);
+    return rejectedResponse;
+  }
+
+  private GetAcquiringBankResponse submitToBankingService(PostPaymentRequest request) {
+    return bankService.submitBankRequest(
+        new GetAcquiringBankRequest(
+            request.getCardNumber(),
+            request.getExpiryDate(),
+            request.getCurrency(),
+            request.getAmount(),
+            request.getCvv()
+        )
+    );
+  }
+
+  private PostPaymentResponse createPaymentResponse(
+      UUID paymentId,
+      PostPaymentRequest request,
+      GetAcquiringBankResponse bankResponse
+  ) {
+    PaymentStatus status = determinePaymentStatus(bankResponse);
+    return buildPaymentResponse(paymentId, status, request);
+  }
+
+  private PostPaymentResponse buildPaymentResponse(
+      UUID paymentId,
       PaymentStatus status,
       PostPaymentRequest request
   ) {
     return new PostPaymentResponse(
-        deduplicationId,
+        paymentId,
         status,
-        lastFourDigits(request.getCardNumber()),
+        extractLastFourDigits(request.getCardNumber()),
         request.getExpiryMonth(),
         request.getExpiryYear(),
         request.getCurrency(),
@@ -89,30 +126,25 @@ public class PaymentGatewayService {
     );
   }
 
-  private PaymentStatus toPaymentStatus(GetAcquiringBankResponse bankResponse) {
-    // technical failure
+  private PaymentStatus determinePaymentStatus(GetAcquiringBankResponse bankResponse) {
     if (bankResponse == null) {
       return PaymentStatus.REJECTED;
     }
-
-    // odd ending
-    if (bankResponse.isAuthorized()) {
-      return PaymentStatus.AUTHORIZED;
-    }
-
-    // even ending
-    return PaymentStatus.DECLINED;
+    return bankResponse.isAuthorized() ? PaymentStatus.AUTHORIZED : PaymentStatus.DECLINED;
   }
 
-  private int lastFourDigits(String cardNumber) {
-    if (cardNumber == null) return 0;
+  private int extractLastFourDigits(String cardNumber) {
+    if (cardNumber == null || cardNumber.isEmpty()) {
+      return 0;
+    }
 
-    String truncated = cardNumber.length() <= 4
-        ? cardNumber : cardNumber.substring(cardNumber.length() - 4);
+    String lastDigits = cardNumber.length() <= LAST_FOUR_DIGITS_LENGTH
+        ? cardNumber : cardNumber.substring(cardNumber.length() - LAST_FOUR_DIGITS_LENGTH);
 
     try {
-      return Integer.parseInt(truncated);
+      return Integer.parseInt(lastDigits);
     } catch (NumberFormatException e) {
+      LOG.warn("Invalid card number format: {}", cardNumber);
       return 0;
     }
   }

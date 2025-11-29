@@ -6,12 +6,39 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.Set;
 
+/**
+ * Service responsible for validating payment request data before processing.
+ * Validates payment card details including card number format, expiry date,
+ * currency, amount, and CVV to ensure they meet the required criteria.
+ */
 @Service
 public class PaymentValidator {
 
+  /**
+   * Set of allowed currency codes for payment processing.
+   * Currently, supports USD, EUR, and GBP.
+   */
   // Could use java.util.Currency to fetch all of them, but we will just allow these three for now
   private static final Set<String> ALLOWED_CURRENCIES = Set.of("USD", "EUR", "GBP");
 
+  /**
+   * Validates a payment request against business rules.
+   * <p>
+   * Performs the following validations:
+   * </p>
+   * <ul>
+   *   <li>Card number: must be 14-19 digits and numeric</li>
+   *   <li>Expiry month: must be between 1 and 12</li>
+   *   <li>Expiry year: must be non-negative</li>
+   *   <li>Expiry date: must be in the future</li>
+   *   <li>Currency: must be a 3-letter code from the allowed set</li>
+   *   <li>Amount: must be positive</li>
+   *   <li>CVV: must be 3-4 digits and numeric</li>
+   * </ul>
+   *
+   * @param request the payment request to validate
+   * @throws ValidationException if any validation rule fails
+   */
   public void validate(PostPaymentRequest request) {
 
     // Card number: length + numeric

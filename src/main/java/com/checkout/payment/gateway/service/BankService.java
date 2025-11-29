@@ -15,6 +15,9 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+/**
+ * Service for communicating with the acquiring bank API.
+ */
 @Service
 public class BankService {
 
@@ -27,6 +30,12 @@ public class BankService {
     this.restTemplate = restTemplate;
   }
 
+  /**
+   * Submits a payment request to the acquiring bank.
+   *
+   * @param request the payment request to submit
+   * @return the bank's response if successful, null if an error occurs
+   */
   public GetAcquiringBankResponse submitBankRequest(GetAcquiringBankRequest request) {
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);

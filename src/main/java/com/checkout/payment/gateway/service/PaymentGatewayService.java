@@ -110,6 +110,13 @@ public class PaymentGatewayService {
     return buildPaymentResponse(paymentId, status, request);
   }
 
+  private PaymentStatus determinePaymentStatus(GetAcquiringBankResponse bankResponse) {
+    if (bankResponse == null) {
+      return PaymentStatus.REJECTED;
+    }
+    return bankResponse.isAuthorized() ? PaymentStatus.AUTHORIZED : PaymentStatus.DECLINED;
+  }
+
   private PostPaymentResponse buildPaymentResponse(
       UUID paymentId,
       PaymentStatus status,
@@ -124,13 +131,6 @@ public class PaymentGatewayService {
         request.getCurrency(),
         request.getAmount()
     );
-  }
-
-  private PaymentStatus determinePaymentStatus(GetAcquiringBankResponse bankResponse) {
-    if (bankResponse == null) {
-      return PaymentStatus.REJECTED;
-    }
-    return bankResponse.isAuthorized() ? PaymentStatus.AUTHORIZED : PaymentStatus.DECLINED;
   }
 
   private int extractLastFourDigits(String cardNumber) {

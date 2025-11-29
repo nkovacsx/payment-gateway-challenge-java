@@ -1,6 +1,7 @@
 package com.checkout.payment.gateway.controller;
 
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -11,7 +12,6 @@ import com.checkout.payment.gateway.repository.PaymentsRepository;
 import java.util.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -62,160 +62,263 @@ class PaymentGatewayControllerTest {
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.message").value("Page not found"));
   }
-  @Nested
-  @DisplayName("Rejection")
-  class Rejection {
 
-    @Test
-    @DisplayName("should fail when card number is too short (<14 chars)")
-    void shouldFailWhenPaymentWithShortCardNumber() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setCardNumber("123");
-      assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
-    }
-
-    @Test
-    @DisplayName("should fail when card number is too long (>19 chars)")
-    void shouldFailWhenPaymentWithLongCardNumber() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setCardNumber("4111111111111111111111111111111111");
-      assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
-    }
-
-    @Test
-    @DisplayName("should fail when card number contains invalid character (non-numeric)")
-    void shouldFailWhenPaymentWithInvalidCharacterInCardNumber() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setCardNumber("4111111111abc111");
-      assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
-    }
-
-    @Test
-    @DisplayName("should fail when card number is missing")
-    void shouldFailWhenCardNumberIsMissing() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setCardNumber(null);
-      assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
-    }
-
-    @Test
-    @DisplayName("should fail when expiry month is zero")
-    void shouldFailWhenExpiryMonthIsZero() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setExpiryMonth(0);
-      assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
-    }
-
-    @Test
-    @DisplayName("should fail when expiry month is >12")
-    void shouldFailWhenExpiryMonthIsGreaterThan12() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setExpiryMonth(13);
-      assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
-    }
-
-    @Test
-    @DisplayName("should fail when expiry month is <0")
-    void shouldFailWhenExpiryMonthIsBelowZero() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setExpiryMonth(-1);
-      assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
-    }
-
-    @Test
-    @DisplayName("should fail when expiry is in the past")
-    void shouldFailWhenExpiryIsInThePast() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setExpiryYear(1984);
-      assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
-    }
-
-    @Test
-    @DisplayName("should fail when currency is not valid")
-    void shouldFailWhenCurrencyIsInvalid() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setCurrency("NOT_REAL");
-      assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
-    }
-
-    @Test
-    @DisplayName("should fail when currency is not present")
-    void shouldFailWhenCurrencyIsNotPresent() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setCurrency(null);
-      assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
-    }
-
-    @Test
-    @DisplayName("should fail when currency is not ISO Standard")
-    void shouldFailWhenCurrencyIsNotISOStandard() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setCurrency("USDT");
-      assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
-    }
-
-    @Test
-    @DisplayName("should fail when amount is negative")
-    void shouldFailWhenAmountIsNegative() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setAmount(-10000);
-      assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
-    }
-
-    @Test
-    @DisplayName("should fail when amount is zero")
-    void shouldFailWhenAmountIsZero() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setAmount(0);
-      assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
-    }
-
-    @Test
-    @DisplayName("should fail when CVV is <3 characters")
-    void shouldFailWhenCVVIsShort() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setCvv("1");
-      assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
-    }
-
-    @Test
-    @DisplayName("should fail when CVV is >4 characters")
-    void shouldFailWhenCVVIsLong() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setCvv("11111");
-      assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
-    }
+  @Test
+  @DisplayName("should fail when card number is too short (<14 chars)")
+  void shouldFailWhenPaymentWithShortCardNumber() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setCardNumber("123");
+    assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
 
-  @Nested
-  @DisplayName("Bank Responses")
-  class BankResponses {
-    @Test
-    @DisplayName("should return Declined if card number ends in even")
-    void shouldFailWhenPaymentWithEvenCardNumber() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setCardNumber("4111111111111118");
-      assertPaymentResponseStatus(req, PaymentStatus.DECLINED);
-    }
-
-    @Test
-    @DisplayName("should return Authorized if card number ends in odd")
-    void shouldFailWhenPaymentWithOddCardNumber() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setCardNumber("4111111111111111");
-      assertPaymentResponseStatus(req, PaymentStatus.AUTHORIZED);
-    }
-
-    @Test
-    @DisplayName("should return Rejected (503) if card number ends in 0")
-    void shouldFailWhenPaymentWithZeroCardNumber() throws Exception {
-      PostPaymentRequest req = validPayment();
-      req.setCardNumber("4111111111111110");
-      assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
-    }
+  @Test
+  @DisplayName("should fail when card number is too long (>19 chars)")
+  void shouldFailWhenPaymentWithLongCardNumber() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setCardNumber("4111111111111111111111111111111111");
+    assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
 
-  private void assertPaymentResponseStatus(PostPaymentRequest req, PaymentStatus status) throws Exception {
+  @Test
+  @DisplayName("should fail when card number contains invalid character (non-numeric)")
+  void shouldFailWhenPaymentWithInvalidCharacterInCardNumber() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setCardNumber("4111111111abc111");
+    assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
+  }
+
+  @Test
+  @DisplayName("should fail when card number is missing")
+  void shouldFailWhenCardNumberIsMissing() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setCardNumber(null);
+    assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
+  }
+
+  @Test
+  @DisplayName("should fail when expiry month is zero")
+  void shouldFailWhenExpiryMonthIsZero() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setExpiryMonth(0);
+    assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
+  }
+
+  @Test
+  @DisplayName("should fail when expiry month is >12")
+  void shouldFailWhenExpiryMonthIsGreaterThan12() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setExpiryMonth(13);
+    assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
+  }
+
+  @Test
+  @DisplayName("should fail when expiry month is <0")
+  void shouldFailWhenExpiryMonthIsBelowZero() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setExpiryMonth(-1);
+    assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
+  }
+
+  @Test
+  @DisplayName("should fail when expiry is in the past")
+  void shouldFailWhenExpiryIsInThePast() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setExpiryYear(1984);
+    assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
+  }
+
+  @Test
+  @DisplayName("should fail when currency is not valid")
+  void shouldFailWhenCurrencyIsInvalid() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setCurrency("NOT_REAL");
+    assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
+  }
+
+  @Test
+  @DisplayName("should fail when currency is not present")
+  void shouldFailWhenCurrencyIsNotPresent() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setCurrency(null);
+    assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
+  }
+
+  @Test
+  @DisplayName("should fail when currency is not ISO Standard")
+  void shouldFailWhenCurrencyIsNotISOStandard() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setCurrency("USDT");
+    assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
+  }
+
+  @Test
+  @DisplayName("should fail when amount is negative")
+  void shouldFailWhenAmountIsNegative() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setAmount(-10000);
+    assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
+  }
+
+  @Test
+  @DisplayName("should fail when amount is zero")
+  void shouldFailWhenAmountIsZero() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setAmount(0);
+    assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
+  }
+
+  @Test
+  @DisplayName("should fail when CVV is <3 characters")
+  void shouldFailWhenCVVIsShort() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setCvv("1");
+    assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
+  }
+
+  @Test
+  @DisplayName("should fail when CVV is >4 characters")
+  void shouldFailWhenCVVIsLong() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setCvv("11111");
+    assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
+  }
+
+  @Test
+  @DisplayName("should return Declined if card number ends in even")
+  void shouldFailWhenPaymentWithEvenCardNumber() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setCardNumber("4111111111111118");
+    assertPaymentResponseStatus(req, PaymentStatus.DECLINED);
+  }
+
+  @Test
+  @DisplayName("should return Authorized if card number ends in odd")
+  void shouldFailWhenPaymentWithOddCardNumber() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setCardNumber("4111111111111111");
+    assertPaymentResponseStatus(req, PaymentStatus.AUTHORIZED);
+  }
+
+  @Test
+  @DisplayName("should return Rejected (503) if card number ends in 0")
+  void shouldFailWhenPaymentWithZeroCardNumber() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setCardNumber("4111111111111110");
+    assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
+  }
+
+  @Test
+  @DisplayName("should return valid payment ID in response")
+  void shouldReturnValidPaymentId() throws Exception {
+    PostPaymentRequest req = validPayment();
+    mvc.perform(MockMvcRequestBuilders.post("/payment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(paymentJson(req)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").exists())
+        .andExpect(jsonPath("$.id").isNotEmpty());
+  }
+
+  @Test
+  @DisplayName("should mask card number and return only last 4 digits")
+  void shouldReturnOnlyLastFourDigits() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setCardNumber("4111111111111111");
+    mvc.perform(MockMvcRequestBuilders.post("/payment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(paymentJson(req)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.cardNumberLastFour").value(1111));
+  }
+
+  @Test
+  @DisplayName("should return correct expiry month and year")
+  void shouldReturnCorrectExpiryData() throws Exception {
+    PostPaymentRequest req = validPayment();
+    mvc.perform(MockMvcRequestBuilders.post("/payment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(paymentJson(req)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.expiryMonth").value(req.getExpiryMonth()))
+        .andExpect(jsonPath("$.expiryYear").value(req.getExpiryYear()));
+  }
+
+  @Test
+  @DisplayName("should reject request with invalid content type")
+  void shouldRejectInvalidContentType() throws Exception {
+    mvc.perform(MockMvcRequestBuilders.post("/payment")
+            .contentType(MediaType.TEXT_PLAIN)
+            .content("invalid"))
+        .andExpect(status().isUnsupportedMediaType());
+  }
+
+  @Test
+  @DisplayName("should reject malformed JSON")
+  void shouldRejectMalformedJson() throws Exception {
+    mvc.perform(MockMvcRequestBuilders.post("/payment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{invalid json"))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("should handle minimum valid card length (14 digits)")
+  void shouldHandleMinimumCardLength() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setCardNumber("41111111111111");
+    assertPaymentResponseStatus(req, PaymentStatus.AUTHORIZED);
+  }
+
+  @Test
+  @DisplayName("should handle maximum valid card length (19 digits)")
+  void shouldHandleMaximumCardLength() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setCardNumber("4111111111111111111");
+    assertPaymentResponseStatus(req, PaymentStatus.AUTHORIZED);
+  }
+
+  @Test
+  @DisplayName("should handle amount with maximum value")
+  void shouldHandleMaximumAmount() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setAmount(Integer.MAX_VALUE);
+    assertPaymentResponseStatus(req, PaymentStatus.AUTHORIZED);
+  }
+
+  @Test
+  @DisplayName("should handle current month/year as valid expiry")
+  void shouldHandleCurrentMonthYearExpiry() throws Exception {
+    PostPaymentRequest req = validPayment();
+    req.setExpiryMonth(java.time.LocalDate.now().getMonthValue());
+    req.setExpiryYear(java.time.LocalDate.now().getYear());
+    assertPaymentResponseStatus(req, PaymentStatus.AUTHORIZED);
+  }
+
+  @Test
+  @DisplayName("should create unique payment IDs for identical requests")
+  void shouldCreateUniquePaymentIds() throws Exception {
+    PostPaymentRequest req = validPayment();
+
+    String response1 = mvc.perform(MockMvcRequestBuilders.post("/payment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(paymentJson(req)))
+        .andExpect(status().isOk())
+        .andReturn().getResponse().getContentAsString();
+
+    String response2 = mvc.perform(MockMvcRequestBuilders.post("/payment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(paymentJson(req)))
+        .andExpect(status().isOk())
+        .andReturn().getResponse().getContentAsString();
+
+    PostPaymentResponse payment1 = mapper.readValue(response1, PostPaymentResponse.class);
+    PostPaymentResponse payment2 = mapper.readValue(response2, PostPaymentResponse.class);
+
+    assertThat(payment1.getId()).isNotEqualTo(payment2.getId());
+  }
+
+  private void assertPaymentResponseStatus(PostPaymentRequest req, PaymentStatus status)
+      throws Exception {
     mvc.perform(MockMvcRequestBuilders.post("/payment")
             .contentType(MediaType.APPLICATION_JSON)
             .content(paymentJson(req)))

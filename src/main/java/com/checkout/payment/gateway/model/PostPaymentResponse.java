@@ -12,6 +12,18 @@ public class PostPaymentResponse {
   private String currency;
   private int amount;
 
+  public PostPaymentResponse(UUID id, PaymentStatus status, int cardNumberLastFour, int expiryMonth, int expiryYear, String currency, int amount) {
+    this.id = id;
+    this.status = status;
+    this.cardNumberLastFour = cardNumberLastFour;
+    this.expiryMonth = expiryMonth;
+    this.expiryYear = expiryYear;
+    this.currency = currency;
+    this.amount = amount;
+  }
+
+  public PostPaymentResponse() {
+  }
 
   public UUID getId() {
     return id;
@@ -29,6 +41,9 @@ public class PostPaymentResponse {
     this.status = status;
   }
 
+  /**
+   * FIXME: `cardNumberLastFour` can not be represented as an int, if the last 4 digits start with a 0 we will truncate that.
+   */
   public int getCardNumberLastFour() {
     return cardNumberLastFour;
   }

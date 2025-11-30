@@ -47,7 +47,7 @@ class PaymentGatewayControllerTest {
 
     paymentsRepository.add(payment);
 
-    mvc.perform(MockMvcRequestBuilders.get("/payment/" + payment.getId()))
+    mvc.perform(MockMvcRequestBuilders.get("/api/v1/payments/" + payment.getId()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value(payment.getStatus().getName()))
         .andExpect(jsonPath("$.cardNumberLastFour").value(payment.getCardNumberLastFour()))
@@ -59,9 +59,29 @@ class PaymentGatewayControllerTest {
 
   @Test
   void whenPaymentWithIdDoesNotExistThen404IsReturned() throws Exception {
-    mvc.perform(MockMvcRequestBuilders.get("/payment/" + UUID.randomUUID()))
+    mvc.perform(MockMvcRequestBuilders.get("/api/v1/payments/" + UUID.randomUUID()))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.message").value("Page not found"));
+  }
+
+  @Test
+  @DisplayName("should return masked card number (last 4 digits only) when retrieving payment by ID")
+  void shouldReturnMaskedCardNumberOnGetById() throws Exception {
+    PostPaymentRequest req = createValidPaymentRequest();
+    req.setCardNumber("4111111111111111");
+
+    String createResponse = mvc.perform(MockMvcRequestBuilders.post("/api/v1/payments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(paymentJson(req)))
+        .andExpect(status().isCreated())
+        .andReturn().getResponse().getContentAsString();
+
+    PostPaymentResponse createdPayment = mapper.readValue(createResponse, PostPaymentResponse.class);
+
+    mvc.perform(MockMvcRequestBuilders.get("/api/v1/payments/" + createdPayment.getId()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.cardNumberLastFour").value(1111))
+        .andExpect(jsonPath("$.cardNumber").doesNotExist());
   }
 
   @Test
@@ -212,10 +232,10 @@ class PaymentGatewayControllerTest {
   @DisplayName("should return valid payment ID in response")
   void shouldReturnValidPaymentId() throws Exception {
     PostPaymentRequest req = createValidPaymentRequest();
-    mvc.perform(MockMvcRequestBuilders.post("/payment")
+    mvc.perform(MockMvcRequestBuilders.post("/api/v1/payments")
             .contentType(MediaType.APPLICATION_JSON)
             .content(paymentJson(req)))
-        .andExpect(status().isOk())
+        .andExpect(status().isCreated())
         .andExpect(jsonPath("$.id").exists())
         .andExpect(jsonPath("$.id").isNotEmpty());
   }
@@ -225,10 +245,10 @@ class PaymentGatewayControllerTest {
   void shouldReturnOnlyLastFourDigits() throws Exception {
     PostPaymentRequest req = createValidPaymentRequest();
     req.setCardNumber("4111111111111111");
-    mvc.perform(MockMvcRequestBuilders.post("/payment")
+    mvc.perform(MockMvcRequestBuilders.post("/api/v1/payments")
             .contentType(MediaType.APPLICATION_JSON)
             .content(paymentJson(req)))
-        .andExpect(status().isOk())
+        .andExpect(status().isCreated())
         .andExpect(jsonPath("$.cardNumberLastFour").value(1111));
   }
 
@@ -236,10 +256,10 @@ class PaymentGatewayControllerTest {
   @DisplayName("should return correct expiry month and year")
   void shouldReturnCorrectExpiryData() throws Exception {
     PostPaymentRequest req = createValidPaymentRequest();
-    mvc.perform(MockMvcRequestBuilders.post("/payment")
+    mvc.perform(MockMvcRequestBuilders.post("/api/v1/payments")
             .contentType(MediaType.APPLICATION_JSON)
             .content(paymentJson(req)))
-        .andExpect(status().isOk())
+        .andExpect(status().isCreated())
         .andExpect(jsonPath("$.expiryMonth").value(req.getExpiryMonth()))
         .andExpect(jsonPath("$.expiryYear").value(req.getExpiryYear()));
   }
@@ -247,7 +267,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should reject request with invalid content type")
   void shouldRejectInvalidContentType() throws Exception {
-    mvc.perform(MockMvcRequestBuilders.post("/payment")
+    mvc.perform(MockMvcRequestBuilders.post("/api/v1/payments")
             .contentType(MediaType.TEXT_PLAIN)
             .content("invalid"))
         .andExpect(status().isUnsupportedMediaType());
@@ -256,7 +276,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should reject malformed JSON")
   void shouldRejectMalformedJson() throws Exception {
-    mvc.perform(MockMvcRequestBuilders.post("/payment")
+    mvc.perform(MockMvcRequestBuilders.post("/api/v1/payments")
             .contentType(MediaType.APPLICATION_JSON)
             .content("{invalid json"))
         .andExpect(status().isBadRequest());
@@ -300,16 +320,16 @@ class PaymentGatewayControllerTest {
   void shouldCreateUniquePaymentIds() throws Exception {
     PostPaymentRequest req = createValidPaymentRequest();
 
-    String response1 = mvc.perform(MockMvcRequestBuilders.post("/payment")
+    String response1 = mvc.perform(MockMvcRequestBuilders.post("/api/v1/payments")
             .contentType(MediaType.APPLICATION_JSON)
             .content(paymentJson(req)))
-        .andExpect(status().isOk())
+        .andExpect(status().isCreated())
         .andReturn().getResponse().getContentAsString();
 
-    String response2 = mvc.perform(MockMvcRequestBuilders.post("/payment")
+    String response2 = mvc.perform(MockMvcRequestBuilders.post("/api/v1/payments")
             .contentType(MediaType.APPLICATION_JSON)
             .content(paymentJson(req)))
-        .andExpect(status().isOk())
+        .andExpect(status().isCreated())
         .andReturn().getResponse().getContentAsString();
 
     PostPaymentResponse payment1 = mapper.readValue(response1, PostPaymentResponse.class);
@@ -320,10 +340,10 @@ class PaymentGatewayControllerTest {
 
   private void assertPaymentResponseStatus(PostPaymentRequest req, PaymentStatus status)
       throws Exception {
-    mvc.perform(MockMvcRequestBuilders.post("/payment")
+    mvc.perform(MockMvcRequestBuilders.post("/api/v1/payments")
             .contentType(MediaType.APPLICATION_JSON)
             .content(paymentJson(req)))
-        .andExpect(status().isOk())
+        .andExpect(status().isCreated())
         .andExpect(jsonPath("$.status").value(status.getName()));
   }
 

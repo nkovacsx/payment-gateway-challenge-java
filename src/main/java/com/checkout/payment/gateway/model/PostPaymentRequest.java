@@ -5,6 +5,8 @@ import java.io.Serializable;
 
 /**
  * Request model for payment processing containing card and payment details.
+ * Contains payment details including card information, amount, and currency.
+ * Card numbers are sent in full (unmasked) for bank validation.
  */
 public class PostPaymentRequest implements Serializable {
 

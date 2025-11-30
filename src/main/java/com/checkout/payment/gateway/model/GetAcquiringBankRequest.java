@@ -2,6 +2,11 @@ package com.checkout.payment.gateway.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Request payload sent to the acquiring bank for payment authorization.
+ * Contains payment details including card information, amount, and currency.
+ * Card numbers are sent in full (unmasked) for bank validation.
+ */
 public class GetAcquiringBankRequest {
 
   @JsonProperty("card_number")

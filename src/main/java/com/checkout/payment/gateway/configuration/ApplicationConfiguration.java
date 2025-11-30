@@ -12,7 +12,7 @@ import org.springframework.web.client.RestTemplate;
 @ConfigurationProperties(prefix = "payment.gateway")
 public class ApplicationConfiguration {
 
-  private List<String> supportedCurrencies; // No default—must be in yml
+  private List<String> supportedCurrencies;
 
   @Bean
   public RestTemplate restTemplate(RestTemplateBuilder builder) {

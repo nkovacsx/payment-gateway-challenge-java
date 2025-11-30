@@ -3,7 +3,7 @@ package com.checkout.payment.gateway.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Response model from the acquiring bank containing authorization result.
+ * Response model from the acquiring bank containing authorization result and code.
  */
 public class GetAcquiringBankResponse {
   private boolean authorized;

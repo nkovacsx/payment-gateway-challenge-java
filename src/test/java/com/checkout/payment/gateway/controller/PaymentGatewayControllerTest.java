@@ -1,6 +1,7 @@
 package com.checkout.payment.gateway.controller;
 
 
+import static com.checkout.payment.gateway.util.PaymentGatewayTestUtil.createValidPaymentRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -66,7 +67,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should fail when card number is too short (<14 chars)")
   void shouldFailWhenPaymentWithShortCardNumber() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setCardNumber("123");
     assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
@@ -74,7 +75,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should fail when card number is too long (>19 chars)")
   void shouldFailWhenPaymentWithLongCardNumber() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setCardNumber("4111111111111111111111111111111111");
     assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
@@ -82,7 +83,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should fail when card number contains invalid character (non-numeric)")
   void shouldFailWhenPaymentWithInvalidCharacterInCardNumber() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setCardNumber("4111111111abc111");
     assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
@@ -90,7 +91,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should fail when card number is missing")
   void shouldFailWhenCardNumberIsMissing() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setCardNumber(null);
     assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
@@ -98,7 +99,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should fail when expiry month is zero")
   void shouldFailWhenExpiryMonthIsZero() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setExpiryMonth(0);
     assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
@@ -106,7 +107,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should fail when expiry month is >12")
   void shouldFailWhenExpiryMonthIsGreaterThan12() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setExpiryMonth(13);
     assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
@@ -114,7 +115,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should fail when expiry month is <0")
   void shouldFailWhenExpiryMonthIsBelowZero() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setExpiryMonth(-1);
     assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
@@ -122,7 +123,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should fail when expiry is in the past")
   void shouldFailWhenExpiryIsInThePast() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setExpiryYear(1984);
     assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
@@ -130,7 +131,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should fail when currency is not valid")
   void shouldFailWhenCurrencyIsInvalid() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setCurrency("NOT_REAL");
     assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
@@ -138,7 +139,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should fail when currency is not present")
   void shouldFailWhenCurrencyIsNotPresent() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setCurrency(null);
     assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
@@ -146,7 +147,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should fail when currency is not ISO Standard")
   void shouldFailWhenCurrencyIsNotISOStandard() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setCurrency("USDT");
     assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
@@ -154,7 +155,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should fail when amount is negative")
   void shouldFailWhenAmountIsNegative() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setAmount(-10000);
     assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
@@ -162,7 +163,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should fail when amount is zero")
   void shouldFailWhenAmountIsZero() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setAmount(0);
     assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
@@ -170,7 +171,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should fail when CVV is <3 characters")
   void shouldFailWhenCVVIsShort() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setCvv("1");
     assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
@@ -178,7 +179,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should fail when CVV is >4 characters")
   void shouldFailWhenCVVIsLong() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setCvv("11111");
     assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
@@ -186,7 +187,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should return Declined if card number ends in even")
   void shouldFailWhenPaymentWithEvenCardNumber() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setCardNumber("4111111111111118");
     assertPaymentResponseStatus(req, PaymentStatus.DECLINED);
   }
@@ -194,7 +195,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should return Authorized if card number ends in odd")
   void shouldFailWhenPaymentWithOddCardNumber() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setCardNumber("4111111111111111");
     assertPaymentResponseStatus(req, PaymentStatus.AUTHORIZED);
   }
@@ -202,7 +203,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should return Rejected (503) if card number ends in 0")
   void shouldFailWhenPaymentWithZeroCardNumber() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setCardNumber("4111111111111110");
     assertPaymentResponseStatus(req, PaymentStatus.REJECTED);
   }
@@ -210,7 +211,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should return valid payment ID in response")
   void shouldReturnValidPaymentId() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     mvc.perform(MockMvcRequestBuilders.post("/payment")
             .contentType(MediaType.APPLICATION_JSON)
             .content(paymentJson(req)))
@@ -222,7 +223,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should mask card number and return only last 4 digits")
   void shouldReturnOnlyLastFourDigits() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setCardNumber("4111111111111111");
     mvc.perform(MockMvcRequestBuilders.post("/payment")
             .contentType(MediaType.APPLICATION_JSON)
@@ -234,7 +235,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should return correct expiry month and year")
   void shouldReturnCorrectExpiryData() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     mvc.perform(MockMvcRequestBuilders.post("/payment")
             .contentType(MediaType.APPLICATION_JSON)
             .content(paymentJson(req)))
@@ -264,7 +265,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should handle minimum valid card length (14 digits)")
   void shouldHandleMinimumCardLength() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setCardNumber("41111111111111");
     assertPaymentResponseStatus(req, PaymentStatus.AUTHORIZED);
   }
@@ -272,7 +273,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should handle maximum valid card length (19 digits)")
   void shouldHandleMaximumCardLength() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setCardNumber("4111111111111111111");
     assertPaymentResponseStatus(req, PaymentStatus.AUTHORIZED);
   }
@@ -280,7 +281,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should handle amount with maximum value")
   void shouldHandleMaximumAmount() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setAmount(Integer.MAX_VALUE);
     assertPaymentResponseStatus(req, PaymentStatus.AUTHORIZED);
   }
@@ -288,7 +289,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should handle current month/year as valid expiry")
   void shouldHandleCurrentMonthYearExpiry() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
     req.setExpiryMonth(java.time.LocalDate.now().getMonthValue());
     req.setExpiryYear(java.time.LocalDate.now().getYear());
     assertPaymentResponseStatus(req, PaymentStatus.AUTHORIZED);
@@ -297,7 +298,7 @@ class PaymentGatewayControllerTest {
   @Test
   @DisplayName("should create unique payment IDs for identical requests")
   void shouldCreateUniquePaymentIds() throws Exception {
-    PostPaymentRequest req = validPayment();
+    PostPaymentRequest req = createValidPaymentRequest();
 
     String response1 = mvc.perform(MockMvcRequestBuilders.post("/payment")
             .contentType(MediaType.APPLICATION_JSON)
@@ -328,16 +329,5 @@ class PaymentGatewayControllerTest {
 
   private String paymentJson(PostPaymentRequest req) throws Exception {
     return mapper.writeValueAsString(req);
-  }
-
-  private static PostPaymentRequest validPayment() {
-    return new PostPaymentRequest(
-        "4111111111111111",
-        12,
-        2030,
-        "USD",
-        100,
-        "123"
-    );
   }
 }

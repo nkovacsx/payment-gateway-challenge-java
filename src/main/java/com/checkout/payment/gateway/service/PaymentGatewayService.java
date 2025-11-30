@@ -62,7 +62,16 @@ public class PaymentGatewayService {
       return createAndStoreRejectedPayment(paymentId, paymentRequest);
     }
 
-    GetAcquiringBankResponse bankResponse = submitToBankingService(paymentRequest);
+    GetAcquiringBankResponse bankResponse = bankService.submitBankRequest(
+        new GetAcquiringBankRequest(
+            paymentRequest.getCardNumber(),
+            paymentRequest.getExpiryDate(),
+            paymentRequest.getCurrency(),
+            paymentRequest.getAmount(),
+            paymentRequest.getCvv()
+        )
+    );
+
     PostPaymentResponse paymentResponse = createPaymentResponse(paymentId, paymentRequest, bankResponse);
 
     paymentsRepository.add(paymentResponse);
@@ -87,18 +96,6 @@ public class PaymentGatewayService {
     );
     paymentsRepository.add(rejectedResponse);
     return rejectedResponse;
-  }
-
-  private GetAcquiringBankResponse submitToBankingService(PostPaymentRequest request) {
-    return bankService.submitBankRequest(
-        new GetAcquiringBankRequest(
-            request.getCardNumber(),
-            request.getExpiryDate(),
-            request.getCurrency(),
-            request.getAmount(),
-            request.getCvv()
-        )
-    );
   }
 
   private PostPaymentResponse createPaymentResponse(

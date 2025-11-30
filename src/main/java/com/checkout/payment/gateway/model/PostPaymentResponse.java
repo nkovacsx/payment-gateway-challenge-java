@@ -3,6 +3,11 @@ package com.checkout.payment.gateway.model;
 import com.checkout.payment.gateway.enums.PaymentStatus;
 import java.util.UUID;
 
+/**
+ * Response returned after processing a payment request.
+ * Contains the payment identifier, authorization status, and masked card details.
+ * Card numbers are masked to show only the last 4 digits for PCI-DSS compliance.
+ */
 public class PostPaymentResponse {
   private UUID id;
   private PaymentStatus status;
@@ -12,6 +17,18 @@ public class PostPaymentResponse {
   private String currency;
   private int amount;
 
+  public PostPaymentResponse(UUID id, PaymentStatus status, int cardNumberLastFour, int expiryMonth, int expiryYear, String currency, int amount) {
+    this.id = id;
+    this.status = status;
+    this.cardNumberLastFour = cardNumberLastFour;
+    this.expiryMonth = expiryMonth;
+    this.expiryYear = expiryYear;
+    this.currency = currency;
+    this.amount = amount;
+  }
+
+  public PostPaymentResponse() {
+  }
 
   public UUID getId() {
     return id;
@@ -26,9 +43,16 @@ public class PostPaymentResponse {
   }
 
   public void setStatus(PaymentStatus status) {
+    if (this.status != null) {
+      throw new IllegalStateException("Payment status cannot be changed once set");
+    }
     this.status = status;
   }
 
+  /**
+   * FIXME: Ideally `cardNumberLastFour` should not be represented as an int,
+   *  if the last 4 digits start with a 0 it will be truncated.
+   */
   public int getCardNumberLastFour() {
     return cardNumberLastFour;
   }

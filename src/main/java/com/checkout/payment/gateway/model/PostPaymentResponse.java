@@ -38,6 +38,9 @@ public class PostPaymentResponse {
   }
 
   public void setStatus(PaymentStatus status) {
+    if (this.status != null) {
+      throw new IllegalStateException("Payment status cannot be changed once set");
+    }
     this.status = status;
   }
 

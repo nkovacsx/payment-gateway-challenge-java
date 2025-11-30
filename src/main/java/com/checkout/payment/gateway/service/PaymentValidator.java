@@ -1,5 +1,6 @@
 package com.checkout.payment.gateway.service;
 
+import com.checkout.payment.gateway.configuration.ApplicationConfiguration;
 import com.checkout.payment.gateway.exception.ValidationException;
 import com.checkout.payment.gateway.model.PostPaymentRequest;
 import org.springframework.stereotype.Service;
@@ -14,12 +15,11 @@ import java.util.Set;
 @Service
 public class PaymentValidator {
 
-  /**
-   * Set of allowed currency codes for payment processing.
-   * Currently, supports USD, EUR, and GBP.
-   */
-  // Could use java.util.Currency to fetch all of them, but we will just allow these three for now
-  private static final Set<String> ALLOWED_CURRENCIES = Set.of("USD", "EUR", "GBP");
+  private final Set<String> supportedCurrencies;
+
+  public PaymentValidator(ApplicationConfiguration config) {
+    this.supportedCurrencies = Set.copyOf(config.getSupportedCurrencies());
+  }
 
   /**
    * Validates a payment request against business rules.
@@ -74,7 +74,7 @@ public class PaymentValidator {
     // Currency is present and valid format, plus it's in our allowed set
     if (request.getCurrency() == null ||
         request.getCurrency().length() != 3 ||
-        !ALLOWED_CURRENCIES.contains(request.getCurrency().toUpperCase())) {
+        !supportedCurrencies.contains(request.getCurrency().toUpperCase())) {
       throw new ValidationException("Currency is invalid");
     }
 

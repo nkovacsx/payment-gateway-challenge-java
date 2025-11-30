@@ -52,6 +52,16 @@ public class PaymentGatewayService {
   /**
    * Processes a payment request through validation and bank authorization.
    *
+   * <p>
+   * This is a synchronous operation. If the bank service fails (e.g., 503),
+   * the request is marked as REJECTED and stored. The merchant must retry
+   * the entire payment request.
+   *
+   * <p>
+   * Design trade-off: Synchronous processing keeps the implementation simple
+   * and meets the core requirements. For production resilience (idempotency,
+   * retries, timeouts), an async approach with a message queue would be needed.
+   *
    * @param paymentRequest the payment details
    * @return the payment response with status
    */

@@ -1,5 +1,6 @@
 package com.checkout.payment.gateway.service;
 
+import com.checkout.payment.gateway.configuration.ApplicationConfiguration;
 import com.checkout.payment.gateway.exception.ValidationException;
 import com.checkout.payment.gateway.model.PostPaymentRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static com.checkout.payment.gateway.util.PaymentGatewayTestUtil.createValidPaymentRequest;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -19,9 +21,10 @@ public class PaymentValidatorTest {
 
   @BeforeEach
   void setUp() {
-    validator = new PaymentValidator();
+    ApplicationConfiguration config = new ApplicationConfiguration();
+    config.setSupportedCurrencies(List.of("USD", "GBP", "EUR"));
+    validator = new PaymentValidator(config);
   }
-
 
   @Nested
   @DisplayName("Card Number Validation")
@@ -402,10 +405,6 @@ public class PaymentValidatorTest {
 
   private void assertSuccessfulValidation(PostPaymentRequest paymentRequest) {
     assertDoesNotThrow(() -> validator.validate(paymentRequest));
-  }
-
-  private void assertValidationErrorWithMessage(PostPaymentRequest paymentRequest) {
-    assertValidationErrorWithMessage(paymentRequest, null);
   }
 
   private void assertValidationErrorWithMessage(PostPaymentRequest paymentRequest, String message) {
